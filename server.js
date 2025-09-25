@@ -18,31 +18,56 @@ handlebars.registerHelper("json", (context) => JSON.stringify(context));
 
 app.post("/generate-pdf", async (req, res) => {
   try {
-    const { businessName, auditScore, auditData, userDetails, generatedDate } = req.body;
+    const { auditId, auditData, userDetails, generatedDate } = req.body;
+
+    // On utilise auditData (historique, pas businessName etc.)
+    if (!auditData) {
+      return res.status(400).json({ error: "auditData requis" });
+    }
 
     const html = template({
-      businessName,
-      auditScore,
-      categoryScores: auditData.category_scores,
-      strengths: auditData.strengths,
-      criticalIssues: auditData.critical_issues,
-      recommendations: auditData.recommendations,
+      audit_score: auditData.audit_score,
+      audit_results: auditData.audit_results,
+      strengths: auditData.audit_results?.strengths,
+      criticalIssues: auditData.audit_results?.critical_issues,
+      recommendations: auditData.audit_results?.recommendations,
+      categoryScores: auditData.audit_results?.category_scores,
       userDetails,
       generatedDate,
-      scoreBgClass: auditScore >= 80 ? "green-bg" : auditScore >= 60 ? "yellow-bg" : "red-bg",
-      scoreTextColor: auditScore >= 80 ? "green-text" : auditScore >= 60 ? "yellow-text" : "red-text",
+      scoreBgClass:
+        auditData.audit_score >= 80
+          ? "green-bg"
+          : auditData.audit_score >= 60
+          ? "yellow-bg"
+          : "red-bg",
+      scoreTextColor:
+        auditData.audit_score >= 80
+          ? "green-text"
+          : auditData.audit_score >= 60
+          ? "yellow-text"
+          : "red-text",
       auditScoreInterpretation:
-        auditScore >= 80
+        auditData.audit_score >= 80
           ? "Votre fiche est très bien optimisée"
-          : auditScore >= 60
+          : auditData.audit_score >= 60
           ? "Votre fiche est correcte mais améliorable"
           : "Votre fiche nécessite une optimisation complète",
     });
 
-    const browser = await puppeteer.launch({ headless: "new" });
-    const page = await browser.newPage();
+    // 🚀 Puppeteer config pour Render (no-sandbox obligatoire)
+    const browser = await puppeteer.launch({
+      headless: "new",
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-gpu",
+        "--disable-dev-shm-usage",
+      ],
+    });
 
+    const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "networkidle0" });
+
     const pdf = await page.pdf({
       format: "A4",
       printBackground: true,
@@ -53,8 +78,11 @@ app.post("/generate-pdf", async (req, res) => {
     res.setHeader("Content-Type", "application/pdf");
     res.send(pdf);
   } catch (err) {
-    console.error("Erreur génération PDF:", err);
-    res.status(500).json({ error: "Erreur génération PDF", details: err.message });
+    console.error("🚨 Erreur génération PDF:", err);
+    res.status(500).json({
+      error: "Erreur génération PDF",
+      details: err.message,
+    });
   }
 });
 
@@ -62,3 +90,4 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`🚀 Service PDF en écoute sur http://localhost:${PORT}`);
 });
+
