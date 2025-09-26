@@ -2,124 +2,576 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Rapport d'Audit GMB - Optileo</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rapport d'Audit GMB - {{businessName}}</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
     body {
-      font-family: 'Poppins', sans-serif;
-      margin: 0; padding: 0;
-      font-size: 12px; color: #333;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: #111827;
+      line-height: 1.6;
+      font-size: 14px;
     }
-    .page {
-      width: 210mm; min-height: 297mm;
-      padding: 20mm; box-sizing: border-box;
+    
+    .container {
+      max-width: 210mm;
+      margin: 0 auto;
+      background: white;
     }
+    
+    /* Header avec gradient */
     .header {
-      background-color: #2563eb; color: white;
-      padding: 15mm 20mm; display: flex;
-      justify-content: space-between; align-items: center;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      color: white;
+      padding: 40px;
+      position: relative;
+      overflow: hidden;
     }
-    .header img { height: 40px; }
-    .header h1 { font-size: 24px; margin: 0; }
-    .content { margin-top: 20mm; }
-    h2 {
-      font-size: 18px; margin-top: 25px; margin-bottom: 10px;
-      border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;
-      color: #1f2937;
+    
+    .header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -10%;
+      width: 300px;
+      height: 300px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 50%;
     }
-    .score-card {
-      display: flex; align-items: center;
-      background: #f0f9ff; border: 1px solid #bfdbfe;
-      padding: 15px; border-radius: 8px; margin: 20px 0;
+    
+    .header-content {
+      position: relative;
+      z-index: 1;
     }
+    
+    .logo-row {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .logo-circle {
+      width: 60px;
+      height: 60px;
+      background: white;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 24px;
+      color: #6366f1;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+    
+    .header h1 {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    
+    .header-subtitle {
+      font-size: 16px;
+      opacity: 0.95;
+    }
+    
+    .header-date {
+      margin-top: 15px;
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    
+    /* Business info card */
+    .business-card {
+      background: #f9fafb;
+      border-radius: 16px;
+      padding: 30px;
+      margin: -30px 30px 30px 30px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      text-align: center;
+      position: relative;
+      z-index: 10;
+      background: white;
+    }
+    
+    .business-name {
+      font-size: 28px;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 10px;
+    }
+    
+    .business-subtitle {
+      color: #6b7280;
+      font-size: 16px;
+    }
+    
+    /* Score section */
+    .score-container {
+      padding: 40px 30px;
+      text-align: center;
+    }
+    
+    .score-circle-wrapper {
+      display: inline-block;
+      position: relative;
+      margin-bottom: 30px;
+    }
+    
     .score-circle {
-      width: 60px; height: 60px; border-radius: 50%;
-      display: flex; justify-content: center; align-items: center;
-      font-size: 18px; font-weight: 700; color: white;
-      margin-right: 15px;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      background: white;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.15);
     }
-    .green-bg { background: #16a34a; }
-    .yellow-bg { background: #f59e0b; }
-    .red-bg { background: #ef4444; }
-    .green-text { color: #16a34a; }
-    .yellow-text { color: #f59e0b; }
-    .red-text { color: #ef4444; }
-    .bar-chart {
-      margin: 15px 0;
+    
+    .score-circle::before {
+      content: '';
+      position: absolute;
+      inset: -6px;
+      border-radius: 50%;
+      padding: 6px;
+      background: linear-gradient(135deg, var(--score-color-1), var(--score-color-2));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
     }
-    .bar {
-      height: 16px; margin-bottom: 8px;
-      background: #e5e7eb; border-radius: 4px; position: relative;
+    
+    .score-excellent::before {
+      --score-color-1: #10b981;
+      --score-color-2: #34d399;
     }
-    .bar-fill {
-      height: 100%; border-radius: 4px;
+    
+    .score-good::before {
+      --score-color-1: #f59e0b;
+      --score-color-2: #fbbf24;
     }
-    .bar-label {
-      font-size: 10px; position: absolute; left: 5px; top: -15px;
+    
+    .score-poor::before {
+      --score-color-1: #ef4444;
+      --score-color-2: #f87171;
     }
+    
+    .score-number {
+      font-size: 56px;
+      font-weight: 800;
+      line-height: 1;
+    }
+    
+    .score-total {
+      font-size: 24px;
+      color: #9ca3af;
+      font-weight: 500;
+    }
+    
+    .score-label {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    
+    .score-description {
+      font-size: 14px;
+      color: #6b7280;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+    
+    .color-excellent { color: #10b981; }
+    .color-good { color: #f59e0b; }
+    .color-poor { color: #ef4444; }
+    
+    /* Catégories */
+    .categories-section {
+      padding: 30px;
+      background: #f9fafb;
+      margin: 30px 0;
+    }
+    
+    .section-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 25px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .section-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+    
+    .category-item {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    
+    .category-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    
+    .category-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #374151;
+    }
+    
+    .category-score {
+      font-size: 18px;
+      font-weight: 700;
+    }
+    
+    .progress-bar {
+      height: 12px;
+      background: #e5e7eb;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      border-radius: 6px;
+      transition: width 0.5s ease;
+    }
+    
+    .fill-excellent {
+      background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+    }
+    
+    .fill-good {
+      background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%);
+    }
+    
+    .fill-poor {
+      background: linear-gradient(90deg, #ef4444 0%, #f87171 100%);
+    }
+    
+    /* Points d'analyse */
+    .analysis-section {
+      padding: 0 30px 30px 30px;
+    }
+    
+    .analysis-card {
+      background: white;
+      border-radius: 16px;
+      padding: 25px;
+      margin-bottom: 20px;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    }
+    
+    .analysis-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .badge {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .badge-success {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    
+    .badge-warning {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    
+    .badge-info {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+    
+    .point-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .point-item {
+      padding: 12px 16px;
+      margin-bottom: 10px;
+      border-radius: 10px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    
+    .point-success {
+      background: #f0fdf4;
+      border-left: 4px solid #10b981;
+    }
+    
+    .point-error {
+      background: #fef2f2;
+      border-left: 4px solid #ef4444;
+    }
+    
+    .point-warning {
+      background: #fffbeb;
+      border-left: 4px solid #f59e0b;
+    }
+    
+    .point-icon {
+      flex-shrink: 0;
+      font-size: 16px;
+    }
+    
+    /* Footer */
     .footer {
-      text-align: center; font-size: 10px; color: #6b7280;
-      margin-top: 40px; border-top: 1px solid #e5e7eb; padding-top: 10px;
+      background: #1f2937;
+      color: white;
+      padding: 40px;
+      margin-top: 60px;
+      text-align: center;
+    }
+    
+    .footer-logo {
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 20px;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .footer-tagline {
+      font-size: 14px;
+      color: #9ca3af;
+      margin-bottom: 30px;
+    }
+    
+    .footer-contacts {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      flex-wrap: wrap;
+      margin-bottom: 30px;
+    }
+    
+    .footer-contact {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #d1d5db;
+      font-size: 14px;
+    }
+    
+    .footer-copyright {
+      font-size: 12px;
+      color: #6b7280;
+      padding-top: 20px;
+      border-top: 1px solid #374151;
+    }
+    
+    /* Impression */
+    @media print {
+      body {
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+      
+      .page-break {
+        page-break-after: always;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="page">
+  <div class="container">
+    <!-- Header -->
     <div class="header">
-      <img src="https://www.optileo.fr/logo.png" alt="Logo Optileo">
-      <h1>Rapport d'Audit GMB</h1>
-    </div>
-
-    <div class="content">
-      <h2>Audit pour {{businessName}}</h2>
-      <p>Généré le {{generatedDate}}</p>
-
-      <div class="score-card">
-        <div class="score-circle {{scoreBgClass}}">
-          {{auditScore}}/100
-        </div>
-        <div>
-          <div class="{{scoreTextColor}}">{{auditScoreInterpretation}}</div>
-          <div style="font-size:11px;">Votre score global d'optimisation GMB</div>
-        </div>
-      </div>
-
-      <h2>Visualisation des scores par catégorie</h2>
-      <div class="bar-chart">
-        {{#each categoryScores}}
-          <div class="bar">
-            <span class="bar-label">{{@key}} ({{this.score}}%)</span>
-            <div class="bar-fill" style="width: {{this.score}}%; background: {{this.color}};"></div>
+      <div class="header-content">
+        <div class="logo-row">
+          <div class="logo-circle">O</div>
+          <div>
+            <h1>Rapport d'Audit</h1>
+            <div class="header-subtitle">Google Business Profile</div>
           </div>
-        {{/each}}
+        </div>
+        <div class="header-date">📅 {{generatedDate}}</div>
       </div>
-
-      <h2>Points forts</h2>
-      <ul>
-        {{#each strengths}}
-          <li>✅ {{this}}</li>
-        {{/each}}
-      </ul>
-
-      <h2>Problèmes critiques</h2>
-      <ul>
-        {{#each criticalIssues}}
-          <li>❌ {{this}}</li>
-        {{/each}}
-      </ul>
-
-      <h2>Recommandations</h2>
-      <ul>
-        {{#each recommendations}}
-          <li>👉 {{this}}</li>
-        {{/each}}
-      </ul>
     </div>
-
+    
+    <!-- Business Card -->
+    <div class="business-card">
+      <div class="business-name">{{businessName}}</div>
+      <div class="business-subtitle">Analyse complète de votre présence locale sur Google</div>
+    </div>
+    
+    <!-- Score -->
+    <div class="score-container">
+      <div class="score-circle-wrapper">
+        <div class="score-circle {{#if (gte auditScore 80)}}score-excellent{{else if (gte auditScore 60)}}score-good{{else}}score-poor{{/if}}">
+          <div class="score-number {{#if (gte auditScore 80)}}color-excellent{{else if (gte auditScore 60)}}color-good{{else}}color-poor{{/if}}">{{auditScore}}</div>
+          <div class="score-total">/100</div>
+        </div>
+      </div>
+      <div class="score-label {{#if (gte auditScore 80)}}color-excellent{{else if (gte auditScore 60)}}color-good{{else}}color-poor{{/if}}">
+        {{#if (gte auditScore 80)}}
+          Excellente Optimisation ! 🎉
+        {{else if (gte auditScore 60)}}
+          Optimisation Correcte 👍
+        {{else}}
+          Optimisation à Améliorer 📈
+        {{/if}}
+      </div>
+      <div class="score-description">
+        {{#if (gte auditScore 80)}}
+          Votre fiche Google Business Profile est très bien optimisée. Continuez ainsi et peaufinez les derniers détails.
+        {{else if (gte auditScore 60)}}
+          Votre fiche est sur la bonne voie mais plusieurs améliorations peuvent booster votre visibilité locale.
+        {{else}}
+          Des actions importantes sont nécessaires pour améliorer votre visibilité sur Google Maps et la recherche locale.
+        {{/if}}
+      </div>
+    </div>
+    
+    <!-- Catégories -->
+    {{#if categoryScores}}
+    <div class="categories-section">
+      <h2 class="section-title">
+        <span class="section-icon">📊</span>
+        Analyse Détaillée par Catégorie
+      </h2>
+      {{#each categoryScores}}
+      <div class="category-item">
+        <div class="category-header">
+          <span class="category-name">{{@key}}</span>
+          <span class="category-score {{#if (gte this.score 80)}}color-excellent{{else if (gte this.score 60)}}color-good{{else}}color-poor{{/if}}">
+            {{this.score}}%
+          </span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill {{#if (gte this.score 80)}}fill-excellent{{else if (gte this.score 60)}}fill-good{{else}}fill-poor{{/if}}" 
+               style="width: {{this.score}}%"></div>
+        </div>
+      </div>
+      {{/each}}
+    </div>
+    {{/if}}
+    
+    <!-- Points forts -->
+    {{#if strengths}}
+    <div class="analysis-section">
+      <div class="analysis-card">
+        <h3 class="analysis-title">
+          <span class="badge badge-success">Points Forts</span>
+        </h3>
+        <ul class="point-list">
+          {{#each strengths}}
+          <li class="point-item point-success">
+            <span class="point-icon">✅</span>
+            <span>{{this}}</span>
+          </li>
+          {{/each}}
+        </ul>
+      </div>
+    </div>
+    {{/if}}
+    
+    <!-- Points critiques -->
+    {{#if criticalIssues}}
+    <div class="analysis-section">
+      <div class="analysis-card">
+        <h3 class="analysis-title">
+          <span class="badge badge-warning">Points d'Attention</span>
+        </h3>
+        <ul class="point-list">
+          {{#each criticalIssues}}
+          <li class="point-item point-error">
+            <span class="point-icon">⚠️</span>
+            <span>{{this}}</span>
+          </li>
+          {{/each}}
+        </ul>
+      </div>
+    </div>
+    {{/if}}
+    
+    <!-- Recommandations -->
+    {{#if recommendations}}
+    <div class="analysis-section">
+      <div class="analysis-card">
+        <h3 class="analysis-title">
+          <span class="badge badge-info">Recommandations</span>
+        </h3>
+        <ul class="point-list">
+          {{#each recommendations}}
+          <li class="point-item point-warning">
+            <span class="point-icon">💡</span>
+            <span>{{this}}</span>
+          </li>
+          {{/each}}
+        </ul>
+      </div>
+    </div>
+    {{/if}}
+    
+    <!-- Footer -->
     <div class="footer">
-      <p>OPTILEO - Expert en référencement local</p>
-      <p>📧 contact@optileo.fr | 🌐 www.optileo.fr</p>
-      <p>Ce rapport a été généré automatiquement par Optileo.</p>
+      <div class="footer-logo">OPTILEO</div>
+      <div class="footer-tagline">Expert en Référencement Local & Google Business Profile</div>
+      <div class="footer-contacts">
+        <div class="footer-contact">
+          <span>📧</span>
+          <span>contact@optileo.fr</span>
+        </div>
+        <div class="footer-contact">
+          <span>🌐</span>
+          <span>www.optileo.fr</span>
+        </div>
+        <div class="footer-contact">
+          <span>📱</span>
+          <span>01 23 45 67 89</span>
+        </div>
+      </div>
+      <div class="footer-copyright">
+        © 2025 Optileo - Tous droits réservés | Rapport généré automatiquement le {{generatedDate}}
+      </div>
     </div>
   </div>
 </body>
