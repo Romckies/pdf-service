@@ -1,6 +1,6 @@
 import express from "express";
 import bodyParser from "body-parser";
-import puppeteer from "puppeteer";   // version complète
+import puppeteer from "puppeteer";   // version complète, téléchargera Chromium
 import handlebars from "handlebars";
 import fs from "fs";
 import path from "path";
@@ -9,13 +9,13 @@ const app = express();
 app.use(bodyParser.json({ limit: "10mb" }));
 
 // ----------------------
-// Template
+// Chargement du template
 // ----------------------
 let template;
 try {
   const templatePath = path.join(process.cwd(), "template.html");
   if (!fs.existsSync(templatePath)) {
-    console.warn("⚠️ template.html introuvable");
+    console.warn("⚠️ template.html introuvable, le PDF risque d’être vide.");
     template = handlebars.compile("<html><body><h1>Template manquant</h1></body></html>");
   } else {
     const templateSource = fs.readFileSync(templatePath, "utf-8");
@@ -26,16 +26,19 @@ try {
   template = handlebars.compile("<html><body><h1>Erreur template</h1></body></html>");
 }
 
-// Helper JSON
+// Helper JSON utilisable dans Handlebars
 handlebars.registerHelper("json", (context) => JSON.stringify(context, null, 2));
 
 // ----------------------
-// Endpoint test
+// Endpoint test service
 // ----------------------
 app.get("/", (req, res) => {
   res.send("✅ PDF Service is running");
 });
 
+// ----------------------
+// Endpoint test PDF simple
+// ----------------------
 app.get("/test-pdf", async (req, res) => {
   try {
     const browser = await puppeteer.launch({
@@ -57,7 +60,7 @@ app.get("/test-pdf", async (req, res) => {
 });
 
 // ----------------------
-// Endpoint génération PDF
+// Endpoint génération PDF complet
 // ----------------------
 app.post("/generate-pdf", async (req, res) => {
   try {
@@ -67,6 +70,7 @@ app.post("/generate-pdf", async (req, res) => {
       return res.status(400).json({ error: "auditData requis" });
     }
 
+    // Génération du HTML à partir du template
     const html = template({
       auditScore: auditData.audit_score,
       audit_results: auditData.audit_results,
@@ -77,15 +81,17 @@ app.post("/generate-pdf", async (req, res) => {
       userDetails,
       generatedDate,
       scoreBgClass:
-        auditData.audit_score >= 80 ? "green-bg" :
-        auditData.audit_score >= 60 ? "yellow-bg" : "red-bg",
+        auditData.audit_score >= 80 ? "green-bg"
+        : auditData.audit_score >= 60 ? "yellow-bg"
+        : "red-bg",
       scoreTextColor:
-        auditData.audit_score >= 80 ? "green-text" :
-        auditData.audit_score >= 60 ? "yellow-text" : "red-text",
+        auditData.audit_score >= 80 ? "green-text"
+        : auditData.audit_score >= 60 ? "yellow-text"
+        : "red-text",
       auditScoreInterpretation:
-        auditData.audit_score >= 80 ? "Votre fiche est très bien optimisée" :
-        auditData.audit_score >= 60 ? "Votre fiche est correcte mais améliorable" :
-        "Votre fiche nécessite une optimisation complète",
+        auditData.audit_score >= 80 ? "Votre fiche est très bien optimisée"
+        : auditData.audit_score >= 60 ? "Votre fiche est correcte mais améliorable"
+        : "Votre fiche nécessite une optimisation complète",
     });
 
     const browser = await puppeteer.launch({
@@ -106,6 +112,9 @@ app.post("/generate-pdf", async (req, res) => {
   }
 });
 
+// ----------------------
+// Lancement serveur
+// ----------------------
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Service PDF en écoute sur http://localhost:${PORT}`);
