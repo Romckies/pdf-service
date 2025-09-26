@@ -1,6 +1,6 @@
 import express from "express";
 import bodyParser from "body-parser";
-import puppeteer from "puppeteer-extra";
+import puppeteer from "puppeteer";
 import handlebars from "handlebars";
 import fs from "fs";
 import path from "path";
@@ -8,23 +8,45 @@ import path from "path";
 const app = express();
 app.use(bodyParser.json({ limit: "10mb" }));
 
-// Charger le template
-const templatePath = path.join(process.cwd(), "template.html");
-const templateSource = fs.readFileSync(templatePath, "utf-8");
-const template = handlebars.compile(templateSource);
+// ----------------------
+// Chargement du template
+// ----------------------
+let template;
+try {
+  const templatePath = path.join(process.cwd(), "template.html");
+  if (!fs.existsSync(templatePath)) {
+    console.warn("⚠️ Attention : template.html introuvable. Le PDF risque de ne pas fonctionner.");
+  } else {
+    const templateSource = fs.readFileSync(templatePath, "utf-8");
+    template = handlebars.compile(templateSource);
+  }
+} catch (err) {
+  console.error("❌ Erreur chargement template:", err);
+  template = handlebars.compile("<html><body><h1>Template manquant</h1></body></html>");
+}
 
-// Helper pour afficher JSON
-handlebars.registerHelper("json", (context) => JSON.stringify(context));
+// Helper pour afficher JSON proprement dans le template
+handlebars.registerHelper("json", (context) => JSON.stringify(context, null, 2));
 
+// ----------------------
+// Endpoint test
+// ----------------------
+app.get("/", (req, res) => {
+  res.send("✅ PDF Service is running");
+});
+
+// ----------------------
+// Endpoint PDF
+// ----------------------
 app.post("/generate-pdf", async (req, res) => {
   try {
-    const { auditId, auditData, userDetails, generatedDate } = req.body;
+    const { auditData, userDetails, generatedDate } = req.body;
 
-    // On utilise auditData (historique, pas businessName etc.)
     if (!auditData) {
       return res.status(400).json({ error: "auditData requis" });
     }
 
+    // Préparer HTML à partir du template
     const html = template({
       audit_score: auditData.audit_score,
       audit_results: auditData.audit_results,
@@ -54,7 +76,7 @@ app.post("/generate-pdf", async (req, res) => {
           : "Votre fiche nécessite une optimisation complète",
     });
 
-    // 🚀 Puppeteer config pour Render (no-sandbox obligatoire)
+    // 🚀 Lancement Chromium (config Render)
     const browser = await puppeteer.launch({
       headless: "new",
       args: [
@@ -86,8 +108,10 @@ app.post("/generate-pdf", async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3001;
+// ----------------------
+// Lancement serveur
+// ----------------------
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Service PDF en écoute sur http://localhost:${PORT}`);
 });
-
