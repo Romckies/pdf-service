@@ -45,8 +45,9 @@ app.get("/test-pdf", async (req, res) => {
     const browser = await puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath,
-      headless: chromium.headless
+      executablePath: await chromium.executablePath || "/usr/bin/chromium-browser",
+      headless: chromium.headless,
+      ignoreHTTPSErrors: true
     });
 
     const page = await browser.newPage();
@@ -105,14 +106,18 @@ app.post("/generate-pdf", async (req, res) => {
     const browser = await puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath,
-      headless: chromium.headless
+      executablePath: await chromium.executablePath || "/usr/bin/chromium-browser",
+      headless: chromium.headless,
+      ignoreHTTPSErrors: true
     });
 
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "networkidle0" });
 
-    const pdf = await page.pdf({ format: "A4", printBackground: true });
+    const pdf = await page.pdf({
+      format: "A4",
+      printBackground: true
+    });
     await browser.close();
 
     console.log("✅ PDF audit généré. Taille:", pdf.length);
