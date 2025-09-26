@@ -1,17 +1,16 @@
 import express from "express";
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
+import chromium from "chromium";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(express.json({ limit: "10mb" })); // autorise des payloads volumineux
+app.use(express.json({ limit: "10mb" }));
 
-// Route de test
 app.get("/", (req, res) => {
-  res.send("🚀 PDF Service is running!");
+  res.send("🚀 PDF Service is running with puppeteer-core + chromium!");
 });
 
-// Route génération PDF
 app.post("/generate", async (req, res) => {
   try {
     const { html } = req.body;
@@ -20,34 +19,30 @@ app.post("/generate", async (req, res) => {
       return res.status(400).json({ error: "Le champ 'html' est requis." });
     }
 
-    // Lancer Puppeteer
     const browser = await puppeteer.launch({
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      executablePath: chromium.path, // 👉 utilise Chromium installé
     });
-    const page = await browser.newPage();
 
-    // Charger le HTML fourni
+    const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "networkidle0" });
 
-    // Générer le PDF
     const pdfBuffer = await page.pdf({ format: "A4" });
 
     await browser.close();
 
-    // Répondre avec le PDF
     res.set({
       "Content-Type": "application/pdf",
       "Content-Disposition": "attachment; filename=generated.pdf",
     });
 
     res.send(pdfBuffer);
-  } catch (error) {
-    console.error("❌ Erreur génération PDF:", error);
+  } catch (err) {
+    console.error("❌ Erreur génération PDF:", err);
     res.status(500).json({ error: "Erreur lors de la génération du PDF" });
   }
 });
 
-// Démarrage serveur
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
