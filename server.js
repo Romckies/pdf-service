@@ -1,7 +1,7 @@
 import express from "express";
 import bodyParser from "body-parser";
-import puppeteer from "puppeteer-core";   // Utilisation puppeteer-core
-import chromium from "chromium";          // Chromium préinstallé sur Render
+import puppeteer from "puppeteer-core";       // Puppeteer "léger"
+import chromium from "chrome-aws-lambda";     // Chromium optimisé serverless
 import handlebars from "handlebars";
 import fs from "fs";
 import path from "path";
@@ -42,8 +42,9 @@ app.get("/test-pdf", async (req, res) => {
   try {
     const browser = await puppeteer.launch({
       headless: true,
-      executablePath: chromium.path,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"]
+      executablePath: await chromium.executablePath,
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport
     });
 
     const page = await browser.newPage();
@@ -100,11 +101,12 @@ app.post("/generate-pdf", async (req, res) => {
           : "Votre fiche nécessite une optimisation complète"
     });
 
-    // Lancement Chromium via puppeteer-core
+    // Lancement Chromium via chrome-aws-lambda
     const browser = await puppeteer.launch({
       headless: true,
-      executablePath: chromium.path,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"]
+      executablePath: await chromium.executablePath,
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport
     });
 
     const page = await browser.newPage();
