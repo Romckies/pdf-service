@@ -46,14 +46,29 @@ app.post("/generate-pdf", async (req, res) => {
       return res.status(400).json({ error: "auditData requis" });
     }
 
+    // 🎨 Ajouter la couleur à chaque catégorie
+    const categoryScores = {};
+    if (auditData.audit_results?.category_scores) {
+      for (const [key, value] of Object.entries(auditData.audit_results.category_scores)) {
+        const score = value.score || 0;
+        categoryScores[key] = {
+          ...value,
+          color:
+            score >= 80 ? "#16a34a" :
+            score >= 60 ? "#f59e0b" :
+            "#ef4444"
+        };
+      }
+    }
+
     // Préparer HTML à partir du template
     const html = template({
-      audit_score: auditData.audit_score,
+      auditScore: auditData.audit_score,
       audit_results: auditData.audit_results,
       strengths: auditData.audit_results?.strengths,
       criticalIssues: auditData.audit_results?.critical_issues,
       recommendations: auditData.audit_results?.recommendations,
-      categoryScores: auditData.audit_results?.category_scores,
+      categoryScores,
       userDetails,
       generatedDate,
       scoreBgClass:
