@@ -1,7 +1,7 @@
 import express from "express";
 import bodyParser from "body-parser";
-import puppeteer from "puppeteer-core";   // ⬅️ puppeteer-core
-import chromium from "chromium";          // ⬅️ chromium
+import puppeteer from "puppeteer-core";   // Utilisation puppeteer-core
+import chromium from "chromium";          // Chromium préinstallé sur Render
 import handlebars from "handlebars";
 import fs from "fs";
 import path from "path";
@@ -9,8 +9,59 @@ import path from "path";
 const app = express();
 app.use(bodyParser.json({ limit: "10mb" }));
 
-// ... ton code template etc ...
+// ----------------------
+// Chargement du template
+// ----------------------
+let template;
+try {
+  const templatePath = path.join(process.cwd(), "template.html");
+  if (!fs.existsSync(templatePath)) {
+    console.warn("⚠️ Attention : template.html introuvable. Le PDF risque de ne pas fonctionner.");
+    template = handlebars.compile("<html><body><h1>Template manquant</h1></body></html>");
+  } else {
+    const templateSource = fs.readFileSync(templatePath, "utf-8");
+    template = handlebars.compile(templateSource);
+  }
+} catch (err) {
+  console.error("❌ Erreur chargement template:", err);
+  template = handlebars.compile("<html><body><h1>Erreur template</h1></body></html>");
+}
 
+// Helper pour debug JSON dans le template
+handlebars.registerHelper("json", (context) => JSON.stringify(context, null, 2));
+
+// ----------------------
+// Endpoint test
+// ----------------------
+app.get("/", (req, res) => {
+  res.send("✅ PDF Service is running");
+});
+
+// Test rapide pour valider Puppeteer/chromium
+app.get("/test-pdf", async (req, res) => {
+  try {
+    const browser = await puppeteer.launch({
+      headless: true,
+      executablePath: chromium.path,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"]
+    });
+
+    const page = await browser.newPage();
+    await page.setContent("<h1>Hello World depuis Optileo 🚀</h1>");
+    const pdf = await page.pdf({ format: "A4", printBackground: true });
+    await browser.close();
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.send(pdf);
+  } catch (err) {
+    console.error("🚨 Erreur test PDF:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ----------------------
+// Endpoint génération PDF
+// ----------------------
 app.post("/generate-pdf", async (req, res) => {
   try {
     const { auditData, userDetails, generatedDate } = req.body;
@@ -19,7 +70,7 @@ app.post("/generate-pdf", async (req, res) => {
       return res.status(400).json({ error: "auditData requis" });
     }
 
-    // préparer le HTML (inchangé)
+    // Préparer HTML avec Handlebars
     const html = template({
       auditScore: auditData.audit_score,
       audit_results: auditData.audit_results,
@@ -28,10 +79,28 @@ app.post("/generate-pdf", async (req, res) => {
       recommendations: auditData.audit_results?.recommendations,
       categoryScores: auditData.audit_results?.category_scores,
       userDetails,
-      generatedDate
+      generatedDate,
+      scoreBgClass:
+        auditData.audit_score >= 80
+          ? "green-bg"
+          : auditData.audit_score >= 60
+          ? "yellow-bg"
+          : "red-bg",
+      scoreTextColor:
+        auditData.audit_score >= 80
+          ? "green-text"
+          : auditData.audit_score >= 60
+          ? "yellow-text"
+          : "red-text",
+      auditScoreInterpretation:
+        auditData.audit_score >= 80
+          ? "Votre fiche est très bien optimisée"
+          : auditData.audit_score >= 60
+          ? "Votre fiche est correcte mais améliorable"
+          : "Votre fiche nécessite une optimisation complète"
     });
 
-    // 🚀 Lancement avec chromium.path
+    // Lancement Chromium via puppeteer-core
     const browser = await puppeteer.launch({
       headless: true,
       executablePath: chromium.path,
@@ -59,6 +128,9 @@ app.post("/generate-pdf", async (req, res) => {
   }
 });
 
+// ----------------------
+// Lancement serveur
+// ----------------------
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Service PDF en écoute sur http://localhost:${PORT}`);
