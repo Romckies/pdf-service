@@ -1,6 +1,7 @@
 import express from "express";
 import bodyParser from "body-parser";
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";   // ⬅️ puppeteer-core
+import chromium from "chromium";          // ⬅️ chromium
 import handlebars from "handlebars";
 import fs from "fs";
 import path from "path";
@@ -8,36 +9,8 @@ import path from "path";
 const app = express();
 app.use(bodyParser.json({ limit: "10mb" }));
 
-// ----------------------
-// Chargement du template
-// ----------------------
-let template;
-try {
-  const templatePath = path.join(process.cwd(), "template.html");
-  if (!fs.existsSync(templatePath)) {
-    console.warn("⚠️ Attention : template.html introuvable. Le PDF risque de ne pas fonctionner.");
-  } else {
-    const templateSource = fs.readFileSync(templatePath, "utf-8");
-    template = handlebars.compile(templateSource);
-  }
-} catch (err) {
-  console.error("❌ Erreur chargement template:", err);
-  template = handlebars.compile("<html><body><h1>Template manquant</h1></body></html>");
-}
+// ... ton code template etc ...
 
-// Helper pour afficher JSON proprement dans le template
-handlebars.registerHelper("json", (context) => JSON.stringify(context, null, 2));
-
-// ----------------------
-// Endpoint test
-// ----------------------
-app.get("/", (req, res) => {
-  res.send("✅ PDF Service is running");
-});
-
-// ----------------------
-// Endpoint PDF
-// ----------------------
 app.post("/generate-pdf", async (req, res) => {
   try {
     const { auditData, userDetails, generatedDate } = req.body;
@@ -46,60 +19,23 @@ app.post("/generate-pdf", async (req, res) => {
       return res.status(400).json({ error: "auditData requis" });
     }
 
-    // 🎨 Ajouter la couleur à chaque catégorie
-    const categoryScores = {};
-    if (auditData.audit_results?.category_scores) {
-      for (const [key, value] of Object.entries(auditData.audit_results.category_scores)) {
-        const score = value.score || 0;
-        categoryScores[key] = {
-          ...value,
-          color:
-            score >= 80 ? "#16a34a" :
-            score >= 60 ? "#f59e0b" :
-            "#ef4444"
-        };
-      }
-    }
-
-    // Préparer HTML à partir du template
+    // préparer le HTML (inchangé)
     const html = template({
       auditScore: auditData.audit_score,
       audit_results: auditData.audit_results,
       strengths: auditData.audit_results?.strengths,
       criticalIssues: auditData.audit_results?.critical_issues,
       recommendations: auditData.audit_results?.recommendations,
-      categoryScores,
+      categoryScores: auditData.audit_results?.category_scores,
       userDetails,
-      generatedDate,
-      scoreBgClass:
-        auditData.audit_score >= 80
-          ? "green-bg"
-          : auditData.audit_score >= 60
-          ? "yellow-bg"
-          : "red-bg",
-      scoreTextColor:
-        auditData.audit_score >= 80
-          ? "green-text"
-          : auditData.audit_score >= 60
-          ? "yellow-text"
-          : "red-text",
-      auditScoreInterpretation:
-        auditData.audit_score >= 80
-          ? "Votre fiche est très bien optimisée"
-          : auditData.audit_score >= 60
-          ? "Votre fiche est correcte mais améliorable"
-          : "Votre fiche nécessite une optimisation complète",
+      generatedDate
     });
 
-    // 🚀 Lancement Chromium (config Render)
+    // 🚀 Lancement avec chromium.path
     const browser = await puppeteer.launch({
-      headless: "new",
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-gpu",
-        "--disable-dev-shm-usage",
-      ],
+      headless: true,
+      executablePath: chromium.path,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"]
     });
 
     const page = await browser.newPage();
@@ -107,7 +43,7 @@ app.post("/generate-pdf", async (req, res) => {
 
     const pdf = await page.pdf({
       format: "A4",
-      printBackground: true,
+      printBackground: true
     });
 
     await browser.close();
@@ -118,14 +54,11 @@ app.post("/generate-pdf", async (req, res) => {
     console.error("🚨 Erreur génération PDF:", err);
     res.status(500).json({
       error: "Erreur génération PDF",
-      details: err.message,
+      details: err.message
     });
   }
 });
 
-// ----------------------
-// Lancement serveur
-// ----------------------
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Service PDF en écoute sur http://localhost:${PORT}`);
