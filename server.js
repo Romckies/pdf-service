@@ -1,52 +1,127 @@
 import express from "express";
+import bodyParser from "body-parser";
 import puppeteer from "puppeteer-core";
-import chromium from "chromium";
+import chromium from "chrome-aws-lambda";
+import handlebars from "handlebars";
+import fs from "fs";
+import path from "path";
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+app.use(bodyParser.json({ limit: "10mb" }));
 
-app.use(express.json({ limit: "10mb" }));
+// ----------------------
+// Charger le template
+// ----------------------
+let template;
+try {
+  const templatePath = path.join(process.cwd(), "template.html");
+  if (!fs.existsSync(templatePath)) {
+    console.warn("⚠️ template.html introuvable, fallback minimal.");
+    template = handlebars.compile("<html><body><h1>Template manquant</h1></body></html>");
+  } else {
+    const templateSource = fs.readFileSync(templatePath, "utf-8");
+    template = handlebars.compile(templateSource);
+  }
+} catch (err) {
+  console.error("❌ Erreur template:", err);
+  template = handlebars.compile("<html><body><h1>Erreur template</h1></body></html>");
+}
 
-// Route de test
+// ----------------------
+// Endpoint test
+// ----------------------
 app.get("/", (req, res) => {
-  res.send("🚀 PDF Service is running with puppeteer-core + chromium!");
+  res.send("✅ PDF Service is running with chrome-aws-lambda");
 });
 
-// Route de génération PDF
+app.get("/test-pdf", async (req, res) => {
+  try {
+    const browser = await puppeteer.launch({
+      args: chromium.args,
+      executablePath: await chromium.executablePath,
+      headless: chromium.headless,
+      defaultViewport: chromium.defaultViewport
+    });
+
+    const page = await browser.newPage();
+    await page.setContent("<h1>Hello PDF 🚀</h1>");
+    const pdfBuffer = await page.pdf({ format: "A4", printBackground: true });
+
+    await browser.close();
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.send(pdfBuffer);
+  } catch (err) {
+    console.error("🚨 Erreur test PDF:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ----------------------
+// Endpoint /generate
+// ----------------------
 app.post("/generate", async (req, res) => {
   try {
-    const { html } = req.body;
+    const { auditData, userDetails, generatedDate } = req.body;
 
-    if (!html) {
-      return res.status(400).json({ error: "Le champ 'html' est requis." });
+    if (!auditData) {
+      return res.status(400).json({ error: "auditData requis" });
     }
 
-    // Lancer Chromium via puppeteer-core
+    const html = template({
+      businessName: userDetails?.name || "Entreprise",
+      auditScore: auditData.audit_score,
+      audit_results: auditData.audit_results,
+      strengths: auditData.audit_results?.strengths,
+      criticalIssues: auditData.audit_results?.critical_issues,
+      recommendations: auditData.audit_results?.recommendations,
+      categoryScores: auditData.audit_results?.category_scores,
+      generatedDate,
+      scoreBgClass:
+        auditData.audit_score >= 80
+          ? "green-bg"
+          : auditData.audit_score >= 60
+          ? "yellow-bg"
+          : "red-bg",
+      scoreTextColor:
+        auditData.audit_score >= 80
+          ? "green-text"
+          : auditData.audit_score >= 60
+          ? "yellow-text"
+          : "red-text",
+      auditScoreInterpretation:
+        auditData.audit_score >= 80
+          ? "Votre fiche est très bien optimisée"
+          : auditData.audit_score >= 60
+          ? "Votre fiche est correcte mais améliorable"
+          : "Votre fiche nécessite une optimisation complète"
+    });
+
     const browser = await puppeteer.launch({
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-      executablePath: chromium.path, // 👉 utilise le binaire chromium installé
+      args: chromium.args,
+      executablePath: await chromium.executablePath,
+      headless: chromium.headless,
+      defaultViewport: chromium.defaultViewport
     });
 
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "networkidle0" });
-
-    const pdfBuffer = await page.pdf({ format: "A4" });
+    const pdfBuffer = await page.pdf({ format: "A4", printBackground: true });
 
     await browser.close();
 
-    res.set({
-      "Content-Type": "application/pdf",
-      "Content-Disposition": "attachment; filename=generated.pdf",
-    });
-
+    res.setHeader("Content-Type", "application/pdf");
     res.send(pdfBuffer);
   } catch (err) {
-    console.error("❌ Erreur génération PDF:", err);
-    res.status(500).json({ error: "Erreur lors de la génération du PDF" });
+    console.error("🚨 Erreur génération PDF:", err);
+    res.status(500).json({ error: err.message });
   }
 });
 
-// Démarrage serveur
+// ----------------------
+// Lancer le serveur
+// ----------------------
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
+  console.log(`🚀 Service PDF en écoute sur http://localhost:${PORT}`);
 });
