@@ -1,11 +1,10 @@
 {
   "name": "pdf-service",
   "version": "1.0.0",
-  "description": "Service de génération de PDF",
-  "main": "index.js",
+  "main": "server.js",
+  "type": "module",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js"
+    "start": "node server.js"
   },
   "engines": {
     "node": "20.x"
@@ -13,8 +12,5 @@
   "dependencies": {
     "express": "^4.19.2",
     "puppeteer": "^22.15.0"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.4"
   }
 }
