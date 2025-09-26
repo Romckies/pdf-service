@@ -89,11 +89,7 @@
         {{#each categoryScores}}
           <div class="bar">
             <span class="bar-label">{{@key}} ({{this.score}}%)</span>
-            <div class="bar-fill" style="width: {{this.score}}%; background: 
-              {{#if (gte this.score 80)}}#16a34a
-              {{else if (gte this.score 60)}}#f59e0b
-              {{else}}#ef4444{{/if}};">
-            </div>
+            <div class="bar-fill" style="width: {{this.score}}%; background: {{this.color}};"></div>
           </div>
         {{/each}}
       </div>
